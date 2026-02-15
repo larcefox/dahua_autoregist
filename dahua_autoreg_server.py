@@ -223,6 +223,8 @@ def autoregist_response(action: str, serial: Optional[str], request: Request, pa
     Так камера получает явные интервалы keepalive и подтверждение регистрации.
     """
     now = int(time.time())
+    device_id = payload.get("DeviceID") or payload.get("deviceId") or payload.get("device_id")
+    dev_class = payload.get("DevClass") or payload.get("devClass")
     server_ip = payload.get("ServerIP") or request.url.hostname or LISTEN_HOST
     server_port = request.url.port or LISTEN_PORT
     params = {
@@ -240,6 +242,11 @@ def autoregist_response(action: str, serial: Optional[str], request: Request, pa
     }
     if serial:
         params["Serial"] = serial
+    if device_id:
+        params["DeviceID"] = device_id
+        params["deviceId"] = device_id
+    if dev_class:
+        params["DevClass"] = dev_class
 
     if action in {"connect", "register", "regist"}:
         # Отдаем и плоские поля, и params — разные прошивки смотрят по-разному.
@@ -249,6 +256,7 @@ def autoregist_response(action: str, serial: Optional[str], request: Request, pa
             "code": 0,
             "msg": "OK",
             "message": "OK",
+            "status": 0,
             "ip": server_ip,
             "port": server_port,
             "KeepAliveInterval": KEEP_ALIVE_INTERVAL_SEC,
@@ -256,6 +264,10 @@ def autoregist_response(action: str, serial: Optional[str], request: Request, pa
             "event": "connect-ack",
             "keepAliveSec": KEEP_ALIVE_INTERVAL_SEC,
             "timeoutSec": KEEP_ALIVE_TIMEOUT_SEC,
+            "Serial": serial,
+            "DeviceID": device_id,
+            "deviceId": device_id,
+            "DevClass": dev_class,
             "params": params,
             "build": BUILD_TAG,
         }
