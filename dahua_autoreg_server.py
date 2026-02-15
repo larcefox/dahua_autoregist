@@ -4,7 +4,7 @@ import time
 from typing import Any, Dict, Optional, Tuple
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, HTMLResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, HTMLResponse, PlainTextResponse, Response
 
 DB_PATH = "devices.db"
 LISTEN_HOST = "0.0.0.0"
@@ -218,7 +218,7 @@ def success_response(extra: Optional[Dict[str, Any]] = None) -> JSONResponse:
     return response
 
 
-def autoregist_response(action: str, serial: Optional[str], request: Request, payload: Dict[str, Any]) -> Dict[str, Any]:
+def autoregist_response(action: str, serial: Optional[str], request: Request, payload: Dict[str, Any]) -> Any:
     """
     Возвращает более "богатый" ответ для частых подпутей AutoRegist.
     Так камера получает явные интервалы keepalive и подтверждение регистрации.
@@ -366,6 +366,18 @@ async def autoreg_any(rest: str, request: Request):
     serial = upsert_device(client_ip, path, method, payload, raw_body)
     action = (rest.split("/", 1)[0] if rest else "").strip()
     response_payload = autoregist_response(action, serial, request, payload)
+
+    # Логируем и возвращаем ответ в зависимости от типа
+    if isinstance(response_payload, Response):
+        try:
+            body = response_payload.body.decode("utf-8", errors="replace") if hasattr(response_payload, "body") else str(
+                response_payload
+            )
+        except Exception:
+            body = "<non-decodable>"
+        print("Response body:", body, flush=True)
+        return response_payload
+
     print("Response body:", json.dumps(response_payload, ensure_ascii=False), flush=True)
     return JSONResponse(response_payload, status_code=200, headers={"Cache-Control": "no-store"})
 
