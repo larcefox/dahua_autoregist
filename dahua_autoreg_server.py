@@ -208,7 +208,7 @@ def success_response(extra: Optional[Dict[str, Any]] = None) -> JSONResponse:
     Dahua в разных прошивках может ожидать разные поля,
     поэтому возвращаем несколько распространённых вариантов.
     """
-    base = {"result": True}
+    base = {"result": True, "success": True, "code": 0, "msg": "OK", "message": "OK"}
     if extra:
         base.update(extra)
     response = JSONResponse(base, status_code=200)
@@ -222,20 +222,30 @@ def autoregist_response(action: str, serial: Optional[str], request: Request, pa
     Так камера получает явные интервалы keepalive и подтверждение регистрации.
     """
     now = int(time.time())
+    server_ip = payload.get("ServerIP") or request.url.hostname or LISTEN_HOST
+    server_port = request.url.port or LISTEN_PORT
     params = {
         "KeepAliveInterval": KEEP_ALIVE_INTERVAL_SEC,
+        "keepAliveInterval": KEEP_ALIVE_INTERVAL_SEC,
+        "KeepAliveTime": KEEP_ALIVE_INTERVAL_SEC,
         "TimeOut": KEEP_ALIVE_TIMEOUT_SEC,
+        "Timeout": KEEP_ALIVE_TIMEOUT_SEC,
+        "ServerTime": now,
+        "ServerIP": server_ip,
+        "ServerPort": server_port,
+        "ip": server_ip,
+        "port": server_port,
     }
     if serial:
         params["Serial"] = serial
 
     if action in {"connect", "register", "regist"}:
-        return {"result": True, "params": params}
+        return success_response({"params": params})
     if action in {"keepAlive", "keepalive", "alive", "heartbeat"}:
-        return {"result": True}
+        return success_response({"params": {"ServerTime": now}})
     if action in {"disconnect", "unregister"}:
-        return {"result": True}
-    return {"result": True}
+        return success_response()
+    return success_response()
 
 
 @app.on_event("startup")
@@ -309,19 +319,19 @@ async def autoreg_any(rest: str, request: Request):
     raw_body = (await request.body()).decode("utf-8", errors="replace")
 
     # Логи в консоль — чтобы увидеть, что реально приходит
-    print("\n=== Dahua AutoRegist ===")
-    print("IP:", client_ip)
-    print("Method:", method)
-    print("Path:", path)
-    print("Headers:", dict(request.headers))
-    print("Parsed payload:", payload)
+    print("\n=== Dahua AutoRegist ===", flush=True)
+    print("IP:", client_ip, flush=True)
+    print("Method:", method, flush=True)
+    print("Path:", path, flush=True)
+    print("Headers:", dict(request.headers), flush=True)
+    print("Parsed payload:", payload, flush=True)
     if raw_body:
-        print("Raw body:", raw_body)
+        print("Raw body:", raw_body, flush=True)
 
     serial = upsert_device(client_ip, path, method, payload, raw_body)
     action = (rest.split("/", 1)[0] if rest else "").strip()
     response_payload = autoregist_response(action, serial, request, payload)
-    print("Response body:", json.dumps(response_payload, ensure_ascii=False))
+    print("Response body:", json.dumps(response_payload, ensure_ascii=False), flush=True)
     return JSONResponse(response_payload, status_code=200, headers={"Cache-Control": "no-store"})
 
 
