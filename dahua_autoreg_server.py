@@ -253,6 +253,9 @@ def autoregist_response(action: str, serial: Optional[str], request: Request, pa
             "port": server_port,
             "KeepAliveInterval": KEEP_ALIVE_INTERVAL_SEC,
             "TimeOut": KEEP_ALIVE_TIMEOUT_SEC,
+            "event": "connect-ack",
+            "keepAliveSec": KEEP_ALIVE_INTERVAL_SEC,
+            "timeoutSec": KEEP_ALIVE_TIMEOUT_SEC,
             "params": params,
             "build": BUILD_TAG,
         }
