@@ -208,13 +208,7 @@ def success_response(extra: Optional[Dict[str, Any]] = None) -> JSONResponse:
     Dahua в разных прошивках может ожидать разные поля,
     поэтому возвращаем несколько распространённых вариантов.
     """
-    base = {
-        "result": True,
-        "success": True,
-        "code": 0,
-        "msg": "OK",
-        "message": "OK",
-    }
+    base = {"result": True}
     if extra:
         base.update(extra)
     response = JSONResponse(base, status_code=200)
@@ -228,37 +222,20 @@ def autoregist_response(action: str, serial: Optional[str], request: Request, pa
     Так камера получает явные интервалы keepalive и подтверждение регистрации.
     """
     now = int(time.time())
-    common = {
-        "path": f"/cgi-bin/api/autoRegist/{action}",
-        "server": request.url.hostname,
-        "port": request.url.port,
-        "ts": now,
-        "serial": serial,
-        "deviceId": payload.get("DeviceID") or payload.get("deviceId"),
-    }
     params = {
         "KeepAliveInterval": KEEP_ALIVE_INTERVAL_SEC,
         "TimeOut": KEEP_ALIVE_TIMEOUT_SEC,
-        "ServerTime": now,
     }
     if serial:
         params["Serial"] = serial
 
     if action in {"connect", "register", "regist"}:
-        return success_response(
-            {
-                **common,
-                "event": "connect-ack",
-                "params": params,
-                "keepAliveSec": KEEP_ALIVE_INTERVAL_SEC,
-                "timeoutSec": KEEP_ALIVE_TIMEOUT_SEC,
-            }
-        )
+        return {"result": True, "params": params}
     if action in {"keepAlive", "keepalive", "alive", "heartbeat"}:
-        return success_response({**common, "event": "keepalive-ack", "params": params})
+        return {"result": True}
     if action in {"disconnect", "unregister"}:
-        return success_response({**common, "event": "disconnect-ack"})
-    return success_response({**common, "event": "ack"})
+        return {"result": True}
+    return {"result": True}
 
 
 @app.on_event("startup")
@@ -343,7 +320,9 @@ async def autoreg_any(rest: str, request: Request):
 
     serial = upsert_device(client_ip, path, method, payload, raw_body)
     action = (rest.split("/", 1)[0] if rest else "").strip()
-    return autoregist_response(action, serial, request, payload)
+    response_payload = autoregist_response(action, serial, request, payload)
+    print("Response body:", json.dumps(response_payload, ensure_ascii=False))
+    return JSONResponse(response_payload, status_code=200, headers={"Cache-Control": "no-store"})
 
 
 # Иногда Dahua дергает OPTIONS (CORS/Preflight) или странные проверки
