@@ -226,6 +226,7 @@ def autoregist_response(action: str, serial: Optional[str], request: Request, pa
     server_port = request.url.port or LISTEN_PORT
     params = {
         "KeepAliveInterval": KEEP_ALIVE_INTERVAL_SEC,
+        "Interval": KEEP_ALIVE_INTERVAL_SEC,
         "keepAliveInterval": KEEP_ALIVE_INTERVAL_SEC,
         "KeepAliveTime": KEEP_ALIVE_INTERVAL_SEC,
         "TimeOut": KEEP_ALIVE_TIMEOUT_SEC,
@@ -240,12 +241,16 @@ def autoregist_response(action: str, serial: Optional[str], request: Request, pa
         params["Serial"] = serial
 
     if action in {"connect", "register", "regist"}:
-        return success_response({"params": params})
+        # Отдаем и плоские поля, и params — разные прошивки смотрят по-разному.
+        payload_out = {"result": True, "ip": server_ip, "port": server_port, "KeepAliveInterval": KEEP_ALIVE_INTERVAL_SEC}
+        payload_out["TimeOut"] = KEEP_ALIVE_TIMEOUT_SEC
+        payload_out["params"] = params
+        return JSONResponse(payload_out, status_code=200, headers={"Cache-Control": "no-store"})
     if action in {"keepAlive", "keepalive", "alive", "heartbeat"}:
-        return success_response({"params": {"ServerTime": now}})
+        return JSONResponse({"result": True, "ServerTime": now}, status_code=200, headers={"Cache-Control": "no-store"})
     if action in {"disconnect", "unregister"}:
-        return success_response()
-    return success_response()
+        return JSONResponse({"result": True}, status_code=200, headers={"Cache-Control": "no-store"})
+    return JSONResponse({"result": True}, status_code=200, headers={"Cache-Control": "no-store"})
 
 
 @app.on_event("startup")
