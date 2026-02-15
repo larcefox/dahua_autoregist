@@ -1,4 +1,5 @@
 import json
+import os
 import sqlite3
 import time
 from typing import Any, Dict, Optional, Tuple
@@ -12,7 +13,8 @@ LISTEN_PORT = 8000
 BUILD_TAG = "2026-02-15-autoregist-compact"
 KEEP_ALIVE_INTERVAL_SEC = 30
 KEEP_ALIVE_TIMEOUT_SEC = 90
-CONNECT_PLAIN_OK = True  # если камера упёртая, отдаем "OK" текстом на connect
+# Если камера упёртая и принимает только текстовый ответ — выставьте CONNECT_PLAIN_OK=true (или переменную окружения).
+CONNECT_PLAIN_OK = (os.getenv("CONNECT_PLAIN_OK") or "true").strip().lower() in {"1", "true", "yes", "y", "on"}
 
 app = FastAPI(title="Dahua AutoRegister Server (tolerant)")
 
