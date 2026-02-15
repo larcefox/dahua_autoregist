@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse, HTMLResponse, PlainTextResponse
 DB_PATH = "devices.db"
 LISTEN_HOST = "0.0.0.0"
 LISTEN_PORT = 8000
+BUILD_TAG = "2026-02-15-autoregist-compact"
 KEEP_ALIVE_INTERVAL_SEC = 30
 KEEP_ALIVE_TIMEOUT_SEC = 90
 
@@ -216,7 +217,7 @@ def success_response(extra: Optional[Dict[str, Any]] = None) -> JSONResponse:
     return response
 
 
-def autoregist_response(action: str, serial: Optional[str], request: Request, payload: Dict[str, Any]) -> JSONResponse:
+def autoregist_response(action: str, serial: Optional[str], request: Request, payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     Возвращает более "богатый" ответ для частых подпутей AutoRegist.
     Так камера получает явные интервалы keepalive и подтверждение регистрации.
@@ -242,15 +243,24 @@ def autoregist_response(action: str, serial: Optional[str], request: Request, pa
 
     if action in {"connect", "register", "regist"}:
         # Отдаем и плоские поля, и params — разные прошивки смотрят по-разному.
-        payload_out = {"result": True, "ip": server_ip, "port": server_port, "KeepAliveInterval": KEEP_ALIVE_INTERVAL_SEC}
-        payload_out["TimeOut"] = KEEP_ALIVE_TIMEOUT_SEC
-        payload_out["params"] = params
-        return JSONResponse(payload_out, status_code=200, headers={"Cache-Control": "no-store"})
+        return {
+            "result": True,
+            "success": True,
+            "code": 0,
+            "msg": "OK",
+            "message": "OK",
+            "ip": server_ip,
+            "port": server_port,
+            "KeepAliveInterval": KEEP_ALIVE_INTERVAL_SEC,
+            "TimeOut": KEEP_ALIVE_TIMEOUT_SEC,
+            "params": params,
+            "build": BUILD_TAG,
+        }
     if action in {"keepAlive", "keepalive", "alive", "heartbeat"}:
-        return JSONResponse({"result": True, "ServerTime": now}, status_code=200, headers={"Cache-Control": "no-store"})
+        return {"result": True, "success": True, "code": 0, "msg": "OK", "message": "OK", "ServerTime": now, "build": BUILD_TAG}
     if action in {"disconnect", "unregister"}:
-        return JSONResponse({"result": True}, status_code=200, headers={"Cache-Control": "no-store"})
-    return JSONResponse({"result": True}, status_code=200, headers={"Cache-Control": "no-store"})
+        return {"result": True, "success": True, "code": 0, "msg": "OK", "message": "OK", "build": BUILD_TAG}
+    return {"result": True, "success": True, "code": 0, "msg": "OK", "message": "OK", "build": BUILD_TAG}
 
 
 @app.on_event("startup")
