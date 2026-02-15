@@ -1,0 +1,27 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Local DB / logs
+devices.db
+*.log
+*.sqlite3
+
+# Virtualenvs
+.env
+.venv
+env/
+venv/
+
+# Editors / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Build artifacts
+build/
+dist/
+*.egg-info/

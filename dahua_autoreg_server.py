@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse, HTMLResponse, PlainTextResponse
 
 DB_PATH = "devices.db"
 LISTEN_HOST = "0.0.0.0"
-LISTEN_PORT = 8080
+LISTEN_PORT = 8000
 KEEP_ALIVE_INTERVAL_SEC = 30
 KEEP_ALIVE_TIMEOUT_SEC = 90
 
