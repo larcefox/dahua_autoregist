@@ -12,6 +12,7 @@ LISTEN_PORT = 8000
 BUILD_TAG = "2026-02-15-autoregist-compact"
 KEEP_ALIVE_INTERVAL_SEC = 30
 KEEP_ALIVE_TIMEOUT_SEC = 90
+CONNECT_PLAIN_OK = True  # если камера упёртая, отдаем "OK" текстом на connect
 
 app = FastAPI(title="Dahua AutoRegister Server (tolerant)")
 
@@ -250,7 +251,7 @@ def autoregist_response(action: str, serial: Optional[str], request: Request, pa
 
     if action in {"connect", "register", "regist"}:
         # Отдаем и плоские поля, и params — разные прошивки смотрят по-разному.
-        return {
+        payload_dict = {
             "result": True,
             "success": True,
             "code": 0,
@@ -271,6 +272,10 @@ def autoregist_response(action: str, serial: Optional[str], request: Request, pa
             "params": params,
             "build": BUILD_TAG,
         }
+        # Некоторые прошивки ждут просто "OK" без JSON — отдадим текстом.
+        if CONNECT_PLAIN_OK:
+            return PlainTextResponse("OK", status_code=200, headers={"Cache-Control": "no-store"})
+        return payload_dict
     if action in {"keepAlive", "keepalive", "alive", "heartbeat"}:
         return {"result": True, "success": True, "code": 0, "msg": "OK", "message": "OK", "ServerTime": now, "build": BUILD_TAG}
     if action in {"disconnect", "unregister"}:
